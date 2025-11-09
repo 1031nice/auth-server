@@ -55,3 +55,6 @@ logs/
 application-local.yml
 application-prod.yml
 
+# Local-only artifacts
+local/
+

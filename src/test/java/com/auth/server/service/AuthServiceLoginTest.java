@@ -71,20 +71,24 @@ class AuthServiceLoginTest {
   @DisplayName("Should login successfully with valid credentials")
   void shouldLoginSuccessfullyWithValidCredentials() {
     // given
-    String token = "jwt.token.here";
+    String accessToken = "jwt.token.here";
+    String refreshToken = "jwt.refresh.token";
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateToken(testUser.getUsername(), testUser.getId()))
-        .thenReturn(token);
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(accessToken);
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(refreshToken);
 
     // when
     AuthResponse response = authService.login(loginRequest);
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.getToken()).isEqualTo(token);
+    assertThat(response.getAccessToken()).isEqualTo(accessToken);
+    assertThat(response.getRefreshToken()).isEqualTo(refreshToken);
     assertThat(response.getId()).isEqualTo(testUser.getId());
     assertThat(response.getUsername()).isEqualTo(testUser.getUsername());
     assertThat(response.getEmail()).isEqualTo(testUser.getEmail());
@@ -92,7 +96,8 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, times(1)).generateToken(testUser.getUsername(), testUser.getId());
+    verify(jwtTokenProvider, times(1)).generateAccessToken(testUser.getUsername(), testUser.getId());
+    verify(jwtTokenProvider, times(1)).generateRefreshToken(testUser.getUsername(), testUser.getId());
   }
 
   @Test
@@ -109,7 +114,8 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, never()).findByUsername(anyString());
-    verify(jwtTokenProvider, never()).generateToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong());
   }
 
   @Test
@@ -127,7 +133,8 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, never()).generateToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong());
   }
 
   @Test
@@ -150,12 +157,14 @@ class AuthServiceLoginTest {
     LoginRequest adminLoginRequest =
         LoginRequest.builder().username("adminuser").password("password123").build();
 
-    String token = "admin.jwt.token";
+    String accessToken = "admin.jwt.token";
+    String refreshToken = "admin.jwt.refresh.token";
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("adminuser")).thenReturn(Optional.of(multiRoleUser));
-    when(jwtTokenProvider.generateToken("adminuser", 2L)).thenReturn(token);
+    when(jwtTokenProvider.generateAccessToken("adminuser", 2L)).thenReturn(accessToken);
+    when(jwtTokenProvider.generateRefreshToken("adminuser", 2L)).thenReturn(refreshToken);
 
     // when
     AuthResponse response = authService.login(adminLoginRequest);
@@ -169,13 +178,16 @@ class AuthServiceLoginTest {
   @DisplayName("Should set Authentication in SecurityContext during login")
   void shouldSetAuthenticationInSecurityContext() {
     // given
-    String token = "jwt.token.here";
+    String accessToken = "jwt.token.here";
+    String refreshToken = "jwt.refresh.token";
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateToken(testUser.getUsername(), testUser.getId()))
-        .thenReturn(token);
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(accessToken);
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(refreshToken);
 
     // when
     authService.login(loginRequest);
@@ -184,5 +196,57 @@ class AuthServiceLoginTest {
     // SecurityContext configuration occurs but difficult to verify in unit tests
     // Verify in integration tests instead
     verify(authenticationManager, times(1)).authenticate(any());
+  }
+
+  @Test
+  @DisplayName("Should issue new tokens when refresh token is valid")
+  void shouldIssueNewTokensWithValidRefreshToken() {
+    // given
+    String refreshToken = "valid.refresh.token";
+    String refreshedAccessToken = "new.access.token";
+    String refreshedRefreshToken = "new.refresh.token";
+
+    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    when(jwtTokenProvider.isRefreshToken(refreshToken)).thenReturn(true);
+    when(jwtTokenProvider.getUsernameFromToken(refreshToken)).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(refreshedAccessToken);
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+        .thenReturn(refreshedRefreshToken);
+
+    // when
+    AuthResponse response = authService.refreshToken(refreshToken);
+
+    // then
+    assertThat(response.getAccessToken()).isEqualTo(refreshedAccessToken);
+    assertThat(response.getRefreshToken()).isEqualTo(refreshedRefreshToken);
+  }
+
+  @Test
+  @DisplayName("Should throw exception when refresh token is invalid")
+  void shouldThrowWhenRefreshTokenInvalid() {
+    // given
+    String refreshToken = "invalid.refresh.token";
+    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(false);
+
+    // when & then
+    assertThatThrownBy(() -> authService.refreshToken(refreshToken))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Invalid refresh token");
+  }
+
+  @Test
+  @DisplayName("Should throw exception when token is not refresh type")
+  void shouldThrowWhenTokenIsNotRefreshType() {
+    // given
+    String refreshToken = "access.token";
+    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+    when(jwtTokenProvider.isRefreshToken(refreshToken)).thenReturn(false);
+
+    // when & then
+    assertThatThrownBy(() -> authService.refreshToken(refreshToken))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Invalid refresh token");
   }
 }

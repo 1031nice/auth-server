@@ -13,7 +13,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
   private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final AuthenticationManager authenticationManager;
 
@@ -40,16 +38,37 @@ public class AuthService {
             .findByUsername(request.getUsername())
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-    String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
+    String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), user.getId());
+    String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
 
-    return buildAuthResponse(user, token);
+    return buildAuthResponse(user, accessToken, refreshToken);
   }
 
-  private AuthResponse buildAuthResponse(User user, String token) {
+  @Transactional(readOnly = true)
+  public AuthResponse refreshToken(String refreshToken) {
+    if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
+      throw new RuntimeException("Invalid refresh token");
+    }
+
+    String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
+
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), user.getId());
+    String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
+
+    return buildAuthResponse(user, accessToken, newRefreshToken);
+  }
+
+  private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
     List<String> roles = user.getRoles().stream().map(Enum::name).collect(Collectors.toList());
 
     return AuthResponse.builder()
-        .token(token)
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
         .id(user.getId())
         .username(user.getUsername())
         .email(user.getEmail())

@@ -21,13 +21,22 @@ public class JwtTokenProvider {
     return Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
   }
 
-  public String generateToken(String username, Long userId) {
+  public String generateAccessToken(String username, Long userId) {
+    return buildToken(username, userId, jwtConfig.getExpiration(), "ACCESS");
+  }
+
+  public String generateRefreshToken(String username, Long userId) {
+    return buildToken(username, userId, jwtConfig.getRefreshExpiration(), "REFRESH");
+  }
+
+  private String buildToken(String username, Long userId, Long expirationMillis, String tokenType) {
     Date now = new Date();
-    Date expiryDate = new Date(now.getTime() + jwtConfig.getExpiration());
+    Date expiryDate = new Date(now.getTime() + expirationMillis);
 
     return Jwts.builder()
         .subject(username)
         .claim("userId", userId)
+        .claim("tokenType", tokenType)
         .issuedAt(now)
         .expiration(expiryDate)
         .signWith(getSigningKey(), Jwts.SIG.HS512)
@@ -35,8 +44,7 @@ public class JwtTokenProvider {
   }
 
   public String getUsernameFromToken(String token) {
-    Claims claims =
-        Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
+    Claims claims = getClaims(token);
 
     return claims.getSubject();
   }
@@ -49,5 +57,13 @@ public class JwtTokenProvider {
       log.error("JWT token validation error: {}", e.getMessage());
       return false;
     }
+  }
+
+  public boolean isRefreshToken(String token) {
+    return "REFRESH".equals(getClaims(token).get("tokenType", String.class));
+  }
+
+  private Claims getClaims(String token) {
+    return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
   }
 }

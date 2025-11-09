@@ -22,11 +22,13 @@ class JwtTokenProviderTest {
   private static final String TEST_SECRET =
       "mySecretKeyForTesting123456789012345678901234567890123456789012345678901234";
   private static final Long TEST_EXPIRATION = 3600000L; // 1 hour
+  private static final Long TEST_REFRESH_EXPIRATION = 604800000L; // 7 days
 
   @BeforeEach
   void setUp() {
     when(jwtConfig.getSecret()).thenReturn(TEST_SECRET);
     when(jwtConfig.getExpiration()).thenReturn(TEST_EXPIRATION);
+    when(jwtConfig.getRefreshExpiration()).thenReturn(TEST_REFRESH_EXPIRATION);
     jwtTokenProvider = new JwtTokenProvider(jwtConfig);
   }
 
@@ -38,7 +40,7 @@ class JwtTokenProviderTest {
     Long userId = 1L;
 
     // when
-    String token = jwtTokenProvider.generateToken(username, userId);
+    String token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // then
     assertThat(token).isNotBlank();
@@ -51,7 +53,7 @@ class JwtTokenProviderTest {
     // given
     String username = "testuser";
     Long userId = 1L;
-    String token = jwtTokenProvider.generateToken(username, userId);
+    String token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // when
     String extractedUsername = jwtTokenProvider.getUsernameFromToken(token);
@@ -66,7 +68,7 @@ class JwtTokenProviderTest {
     // given
     String username = "testuser";
     Long userId = 1L;
-    String token = jwtTokenProvider.generateToken(username, userId);
+    String token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // when
     boolean isValid = jwtTokenProvider.validateToken(token);
@@ -127,14 +129,31 @@ class JwtTokenProviderTest {
     JwtConfig differentConfig = org.mockito.Mockito.mock(JwtConfig.class);
     org.mockito.Mockito.when(differentConfig.getSecret()).thenReturn(differentSecret);
     org.mockito.Mockito.when(differentConfig.getExpiration()).thenReturn(TEST_EXPIRATION);
+    org.mockito.Mockito.when(differentConfig.getRefreshExpiration())
+        .thenReturn(TEST_REFRESH_EXPIRATION);
 
     JwtTokenProvider differentProvider = new JwtTokenProvider(differentConfig);
-    String tokenWithDifferentSecret = differentProvider.generateToken(username, userId);
+    String tokenWithDifferentSecret = differentProvider.generateAccessToken(username, userId);
 
     // when
     boolean isValid = jwtTokenProvider.validateToken(tokenWithDifferentSecret);
 
     // then
     assertThat(isValid).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should identify refresh token correctly")
+  void shouldIdentifyRefreshToken() {
+    // given
+    String username = "testuser";
+    Long userId = 1L;
+    String refreshToken = jwtTokenProvider.generateRefreshToken(username, userId);
+
+    // when
+    boolean isRefresh = jwtTokenProvider.isRefreshToken(refreshToken);
+
+    // then
+    assertThat(isRefresh).isTrue();
   }
 }
