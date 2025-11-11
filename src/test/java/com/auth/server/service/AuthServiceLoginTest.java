@@ -3,6 +3,7 @@ package com.auth.server.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 import com.auth.server.domain.dto.request.LoginRequest;
@@ -73,13 +74,14 @@ class AuthServiceLoginTest {
     // given
     String accessToken = "jwt.token.here";
     String refreshToken = "jwt.refresh.token";
+    List<String> roles = List.of("ROLE_USER");
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(refreshToken);
 
     // when
@@ -96,8 +98,10 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, times(1)).generateAccessToken(testUser.getUsername(), testUser.getId());
-    verify(jwtTokenProvider, times(1)).generateRefreshToken(testUser.getUsername(), testUser.getId());
+    verify(jwtTokenProvider, times(1))
+        .generateAccessToken(testUser.getUsername(), testUser.getId(), roles);
+    verify(jwtTokenProvider, times(1))
+        .generateRefreshToken(testUser.getUsername(), testUser.getId(), roles);
   }
 
   @Test
@@ -114,8 +118,8 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, never()).findByUsername(anyString());
-    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong());
-    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong(), anyList());
+    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong(), anyList());
   }
 
   @Test
@@ -133,8 +137,8 @@ class AuthServiceLoginTest {
 
     verify(authenticationManager, times(1)).authenticate(any());
     verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong());
-    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong());
+    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong(), anyList());
+    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong(), anyList());
   }
 
   @Test
@@ -159,12 +163,13 @@ class AuthServiceLoginTest {
 
     String accessToken = "admin.jwt.token";
     String refreshToken = "admin.jwt.refresh.token";
+    List<String> roles = List.of("ROLE_USER", "ROLE_ADMIN");
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("adminuser")).thenReturn(Optional.of(multiRoleUser));
-    when(jwtTokenProvider.generateAccessToken("adminuser", 2L)).thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken("adminuser", 2L)).thenReturn(refreshToken);
+    when(jwtTokenProvider.generateAccessToken("adminuser", 2L, roles)).thenReturn(accessToken);
+    when(jwtTokenProvider.generateRefreshToken("adminuser", 2L, roles)).thenReturn(refreshToken);
 
     // when
     AuthResponse response = authService.login(adminLoginRequest);
@@ -180,13 +185,14 @@ class AuthServiceLoginTest {
     // given
     String accessToken = "jwt.token.here";
     String refreshToken = "jwt.refresh.token";
+    List<String> roles = List.of("ROLE_USER");
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(mockAuthentication);
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(refreshToken);
 
     // when
@@ -205,14 +211,16 @@ class AuthServiceLoginTest {
     String refreshToken = "valid.refresh.token";
     String refreshedAccessToken = "new.access.token";
     String refreshedRefreshToken = "new.refresh.token";
+    List<String> roles = List.of("ROLE_USER");
 
     when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
     when(jwtTokenProvider.isRefreshToken(refreshToken)).thenReturn(true);
     when(jwtTokenProvider.getUsernameFromToken(refreshToken)).thenReturn("testuser");
+    when(jwtTokenProvider.getScopes(refreshToken)).thenReturn(roles);
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(refreshedAccessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId()))
+    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
         .thenReturn(refreshedRefreshToken);
 
     // when
