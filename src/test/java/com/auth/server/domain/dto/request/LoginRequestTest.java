@@ -18,32 +18,32 @@ class LoginRequestTest {
 
   @BeforeEach
   void setUp() {
-    ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    var factory = Validation.buildDefaultValidatorFactory();
     validator = factory.getValidator();
   }
 
   @Test
-  @DisplayName("Should pass validation when request is valid")
+  @DisplayName("유효성 검증 통과: 유효한 요청")
   void shouldPassValidationWhenRequestIsValid() {
     // given
-    LoginRequest request =
+    var request =
         LoginRequest.builder().username("testuser").password("password123").build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).isEmpty();
   }
 
   @Test
-  @DisplayName("Should fail validation when username is null")
+  @DisplayName("유효성 검증 실패: username이 null")
   void shouldFailValidationWhenUsernameIsNull() {
     // given
-    LoginRequest request = LoginRequest.builder().username(null).password("password123").build();
+    var request = LoginRequest.builder().username(null).password("password123").build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).hasSize(1);
@@ -51,13 +51,13 @@ class LoginRequestTest {
   }
 
   @Test
-  @DisplayName("Should fail validation when username is blank")
+  @DisplayName("유효성 검증 실패: username이 빈 문자열")
   void shouldFailValidationWhenUsernameIsBlank() {
     // given
-    LoginRequest request = LoginRequest.builder().username("").password("password123").build();
+    var request = LoginRequest.builder().username("").password("password123").build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).hasSize(1);
@@ -65,13 +65,13 @@ class LoginRequestTest {
   }
 
   @Test
-  @DisplayName("Should fail validation when password is null")
+  @DisplayName("유효성 검증 실패: password가 null")
   void shouldFailValidationWhenPasswordIsNull() {
     // given
-    LoginRequest request = LoginRequest.builder().username("testuser").password(null).build();
+    var request = LoginRequest.builder().username("testuser").password(null).build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).hasSize(1);
@@ -79,13 +79,13 @@ class LoginRequestTest {
   }
 
   @Test
-  @DisplayName("Should fail validation when password is blank")
+  @DisplayName("유효성 검증 실패: password가 빈 문자열")
   void shouldFailValidationWhenPasswordIsBlank() {
     // given
-    LoginRequest request = LoginRequest.builder().username("testuser").password("   ").build();
+    var request = LoginRequest.builder().username("testuser").password("   ").build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).hasSize(1);
@@ -93,13 +93,13 @@ class LoginRequestTest {
   }
 
   @Test
-  @DisplayName("Should fail validation when both username and password are null")
+  @DisplayName("유효성 검증 실패: username과 password 모두 null")
   void shouldFailValidationWhenBothUsernameAndPasswordAreNull() {
     // given
-    LoginRequest request = LoginRequest.builder().username(null).password(null).build();
+    var request = LoginRequest.builder().username(null).password(null).build();
 
     // when
-    Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
+    var violations = validator.validate(request);
 
     // then
     assertThat(violations).hasSize(2);

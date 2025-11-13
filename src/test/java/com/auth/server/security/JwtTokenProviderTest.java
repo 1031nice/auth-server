@@ -1,7 +1,7 @@
 package com.auth.server.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.*;
 
 import com.auth.server.config.JwtConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,21 +26,21 @@ class JwtTokenProviderTest {
 
   @BeforeEach
   void setUp() {
-    when(jwtConfig.getSecret()).thenReturn(TEST_SECRET);
-    when(jwtConfig.getExpiration()).thenReturn(TEST_EXPIRATION);
-    when(jwtConfig.getRefreshExpiration()).thenReturn(TEST_REFRESH_EXPIRATION);
+    given(jwtConfig.getSecret()).willReturn(TEST_SECRET);
+    given(jwtConfig.getExpiration()).willReturn(TEST_EXPIRATION);
+    given(jwtConfig.getRefreshExpiration()).willReturn(TEST_REFRESH_EXPIRATION);
     jwtTokenProvider = new JwtTokenProvider(jwtConfig);
   }
 
   @Test
-  @DisplayName("Should generate token successfully")
+  @DisplayName("generateAccessToken: 토큰 생성 성공")
   void shouldGenerateTokenSuccessfully() {
     // given
-    String username = "testuser";
-    Long userId = 1L;
+    var username = "testuser";
+    var userId = 1L;
 
     // when
-    String token = jwtTokenProvider.generateAccessToken(username, userId);
+    var token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // then
     assertThat(token).isNotBlank();
@@ -48,110 +48,109 @@ class JwtTokenProviderTest {
   }
 
   @Test
-  @DisplayName("Should extract username from token")
+  @DisplayName("getUsernameFromToken: 토큰에서 사용자명 추출")
   void shouldExtractUsernameFromToken() {
     // given
-    String username = "testuser";
-    Long userId = 1L;
-    String token = jwtTokenProvider.generateAccessToken(username, userId);
+    var username = "testuser";
+    var userId = 1L;
+    var token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // when
-    String extractedUsername = jwtTokenProvider.getUsernameFromToken(token);
+    var extractedUsername = jwtTokenProvider.getUsernameFromToken(token);
 
     // then
     assertThat(extractedUsername).isEqualTo(username);
   }
 
   @Test
-  @DisplayName("Should validate valid token")
+  @DisplayName("validateToken: 유효한 토큰 검증")
   void shouldValidateValidToken() {
     // given
-    String username = "testuser";
-    Long userId = 1L;
-    String token = jwtTokenProvider.generateAccessToken(username, userId);
+    var username = "testuser";
+    var userId = 1L;
+    var token = jwtTokenProvider.generateAccessToken(username, userId);
 
     // when
-    boolean isValid = jwtTokenProvider.validateToken(token);
+    var isValid = jwtTokenProvider.validateToken(token);
 
     // then
     assertThat(isValid).isTrue();
   }
 
   @Test
-  @DisplayName("Should fail validation for invalid token")
+  @DisplayName("인증 실패: 유효하지 않은 토큰")
   void shouldFailValidationForInvalidToken() {
     // given
-    String invalidToken = "invalid.token.here";
+    var invalidToken = "invalid.token.here";
 
     // when
-    boolean isValid = jwtTokenProvider.validateToken(invalidToken);
+    var isValid = jwtTokenProvider.validateToken(invalidToken);
 
     // then
     assertThat(isValid).isFalse();
   }
 
   @Test
-  @DisplayName("Should fail validation for empty token")
+  @DisplayName("인증 실패: 빈 토큰")
   void shouldFailValidationForEmptyToken() {
     // given
-    String emptyToken = "";
+    var emptyToken = "";
 
     // when
-    boolean isValid = jwtTokenProvider.validateToken(emptyToken);
+    var isValid = jwtTokenProvider.validateToken(emptyToken);
 
     // then
     assertThat(isValid).isFalse();
   }
 
   @Test
-  @DisplayName("Should fail validation for null token")
+  @DisplayName("인증 실패: null 토큰")
   void shouldFailValidationForNullToken() {
     // given
     String nullToken = null;
 
     // when
-    boolean isValid = jwtTokenProvider.validateToken(nullToken);
+    var isValid = jwtTokenProvider.validateToken(nullToken);
 
     // then
     assertThat(isValid).isFalse();
   }
 
   @Test
-  @DisplayName("Should fail validation for token with different secret")
+  @DisplayName("인증 실패: 다른 시크릿으로 생성된 토큰")
   void shouldFailValidationForTokenWithDifferentSecret() {
     // given
-    String username = "testuser";
-    Long userId = 1L;
-    String differentSecret =
+    var username = "testuser";
+    var userId = 1L;
+    var differentSecret =
         "differentSecretKeyForTesting12345678901234567890123456789012345678901234567890";
 
     // Create token with different secret using reflection or manual creation
-    JwtConfig differentConfig = org.mockito.Mockito.mock(JwtConfig.class);
-    org.mockito.Mockito.when(differentConfig.getSecret()).thenReturn(differentSecret);
-    org.mockito.Mockito.when(differentConfig.getExpiration()).thenReturn(TEST_EXPIRATION);
-    org.mockito.Mockito.when(differentConfig.getRefreshExpiration())
-        .thenReturn(TEST_REFRESH_EXPIRATION);
+    var differentConfig = mock(JwtConfig.class);
+    given(differentConfig.getSecret()).willReturn(differentSecret);
+    given(differentConfig.getExpiration()).willReturn(TEST_EXPIRATION);
+    given(differentConfig.getRefreshExpiration()).willReturn(TEST_REFRESH_EXPIRATION);
 
-    JwtTokenProvider differentProvider = new JwtTokenProvider(differentConfig);
-    String tokenWithDifferentSecret = differentProvider.generateAccessToken(username, userId);
+    var differentProvider = new JwtTokenProvider(differentConfig);
+    var tokenWithDifferentSecret = differentProvider.generateAccessToken(username, userId);
 
     // when
-    boolean isValid = jwtTokenProvider.validateToken(tokenWithDifferentSecret);
+    var isValid = jwtTokenProvider.validateToken(tokenWithDifferentSecret);
 
     // then
     assertThat(isValid).isFalse();
   }
 
   @Test
-  @DisplayName("Should identify refresh token correctly")
+  @DisplayName("isRefreshToken: Refresh Token 식별")
   void shouldIdentifyRefreshToken() {
     // given
-    String username = "testuser";
-    Long userId = 1L;
-    String refreshToken = jwtTokenProvider.generateRefreshToken(username, userId);
+    var username = "testuser";
+    var userId = 1L;
+    var refreshToken = jwtTokenProvider.generateRefreshToken(username, userId);
 
     // when
-    boolean isRefresh = jwtTokenProvider.isRefreshToken(refreshToken);
+    var isRefresh = jwtTokenProvider.isRefreshToken(refreshToken);
 
     // then
     assertThat(isRefresh).isTrue();

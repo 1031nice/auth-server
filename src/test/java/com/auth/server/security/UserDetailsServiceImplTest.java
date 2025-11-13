@@ -2,7 +2,7 @@ package com.auth.server.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.*;
 
 import com.auth.server.domain.entity.Role;
 import com.auth.server.domain.entity.User;
@@ -49,14 +49,14 @@ class UserDetailsServiceImplTest {
   }
 
   @Test
-  @DisplayName("Should load UserDetails by username for existing user")
+  @DisplayName("loadUserByUsername: 존재하는 사용자로 UserDetails 로드")
   void shouldLoadUserDetailsByUsername() {
     // given
-    String username = "testuser";
-    when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+    var username = "testuser";
+    given(userRepository.findByUsername(username)).willReturn(Optional.of(testUser));
 
     // when
-    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    var userDetails = userDetailsService.loadUserByUsername(username);
 
     // then
     assertThat(userDetails).isNotNull();
@@ -72,11 +72,11 @@ class UserDetailsServiceImplTest {
   }
 
   @Test
-  @DisplayName("Should throw UsernameNotFoundException when user not found")
+  @DisplayName("인증 실패: 사용자를 찾을 수 없음")
   void shouldThrowExceptionWhenUserNotFound() {
     // given
-    String username = "nonexistent";
-    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+    var username = "nonexistent";
+    given(userRepository.findByUsername(username)).willReturn(Optional.empty());
 
     // when & then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(username))
@@ -85,10 +85,10 @@ class UserDetailsServiceImplTest {
   }
 
   @Test
-  @DisplayName("Should load UserDetails with multiple roles")
+  @DisplayName("loadUserByUsername: 여러 역할을 가진 사용자 로드")
   void shouldLoadUserDetailsWithMultipleRoles() {
     // given
-    User multiRoleUser =
+    var multiRoleUser =
         User.builder()
             .id(2L)
             .username("adminuser")
@@ -101,10 +101,10 @@ class UserDetailsServiceImplTest {
             .credentialsNonExpired(true)
             .build();
 
-    when(userRepository.findByUsername("adminuser")).thenReturn(Optional.of(multiRoleUser));
+    given(userRepository.findByUsername("adminuser")).willReturn(Optional.of(multiRoleUser));
 
     // when
-    UserDetails userDetails = userDetailsService.loadUserByUsername("adminuser");
+    var userDetails = userDetailsService.loadUserByUsername("adminuser");
 
     // then
     assertThat(userDetails.getAuthorities()).hasSize(2);
@@ -113,10 +113,10 @@ class UserDetailsServiceImplTest {
   }
 
   @Test
-  @DisplayName("Should load UserDetails for disabled user")
+  @DisplayName("loadUserByUsername: 비활성화된 사용자 로드")
   void shouldLoadUserDetailsForDisabledUser() {
     // given
-    User disabledUser =
+    var disabledUser =
         User.builder()
             .id(3L)
             .username("disableduser")
@@ -129,20 +129,20 @@ class UserDetailsServiceImplTest {
             .credentialsNonExpired(true)
             .build();
 
-    when(userRepository.findByUsername("disableduser")).thenReturn(Optional.of(disabledUser));
+    given(userRepository.findByUsername("disableduser")).willReturn(Optional.of(disabledUser));
 
     // when
-    UserDetails userDetails = userDetailsService.loadUserByUsername("disableduser");
+    var userDetails = userDetailsService.loadUserByUsername("disableduser");
 
     // then
     assertThat(userDetails.isEnabled()).isFalse();
   }
 
   @Test
-  @DisplayName("Should load UserDetails for expired account")
+  @DisplayName("loadUserByUsername: 만료된 계정 로드")
   void shouldLoadUserDetailsForExpiredAccount() {
     // given
-    User expiredUser =
+    var expiredUser =
         User.builder()
             .id(4L)
             .username("expireduser")
@@ -155,10 +155,10 @@ class UserDetailsServiceImplTest {
             .credentialsNonExpired(true)
             .build();
 
-    when(userRepository.findByUsername("expireduser")).thenReturn(Optional.of(expiredUser));
+    given(userRepository.findByUsername("expireduser")).willReturn(Optional.of(expiredUser));
 
     // when
-    UserDetails userDetails = userDetailsService.loadUserByUsername("expireduser");
+    var userDetails = userDetailsService.loadUserByUsername("expireduser");
 
     // then
     assertThat(userDetails.isAccountNonExpired()).isFalse();

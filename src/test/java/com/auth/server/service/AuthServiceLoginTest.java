@@ -4,12 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.*;
 
+import com.auth.server.config.JwtConfig;
 import com.auth.server.domain.dto.request.LoginRequest;
 import com.auth.server.domain.dto.response.AuthResponse;
+import com.auth.server.domain.entity.RefreshToken;
 import com.auth.server.domain.entity.Role;
 import com.auth.server.domain.entity.User;
+import com.auth.server.repository.RefreshTokenRepository;
 import com.auth.server.repository.UserRepository;
 import com.auth.server.security.JwtTokenProvider;
 import java.time.LocalDateTime;
@@ -33,12 +38,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class AuthServiceLoginTest {
 
   @Mock private UserRepository userRepository;
-
+  @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private PasswordEncoder passwordEncoder;
-
   @Mock private JwtTokenProvider jwtTokenProvider;
-
   @Mock private AuthenticationManager authenticationManager;
+  @Mock private JwtConfig jwtConfig;
 
   @InjectMocks private AuthService authService;
 
@@ -69,23 +73,27 @@ class AuthServiceLoginTest {
   }
 
   @Test
-  @DisplayName("Should login successfully with valid credentials")
+  @DisplayName("login: 유효한 자격증명으로 로그인 성공")
   void shouldLoginSuccessfullyWithValidCredentials() {
     // given
-    String accessToken = "jwt.token.here";
-    String refreshToken = "jwt.refresh.token";
-    List<String> roles = List.of("ROLE_USER");
+    var accessToken = "jwt.token.here";
+    var refreshToken = "jwt.refresh.token";
+    var roles = List.of("ROLE_USER");
 
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenReturn(mockAuthentication);
-    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(refreshToken);
+    given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .willReturn(mockAuthentication);
+    given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
+    willDoNothing().given(refreshTokenRepository).deleteByUserId(anyLong());
+    given(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(accessToken);
+    given(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(refreshToken);
+    given(jwtConfig.getRefreshExpiration()).willReturn(604800000L);
+    given(refreshTokenRepository.save(any(RefreshToken.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     // when
-    AuthResponse response = authService.login(loginRequest);
+    var response = authService.login(loginRequest);
 
     // then
     assertThat(response).isNotNull();
@@ -96,56 +104,56 @@ class AuthServiceLoginTest {
     assertThat(response.getEmail()).isEqualTo(testUser.getEmail());
     assertThat(response.getRoles()).containsExactly("ROLE_USER");
 
-    verify(authenticationManager, times(1)).authenticate(any());
-    verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, times(1))
+    then(authenticationManager).should(times(1)).authenticate(any());
+    then(userRepository).should(times(1)).findByUsername("testuser");
+    then(refreshTokenRepository).should(times(1)).deleteByUserId(testUser.getId());
+    then(jwtTokenProvider).should(times(1))
         .generateAccessToken(testUser.getUsername(), testUser.getId(), roles);
-    verify(jwtTokenProvider, times(1))
+    then(jwtTokenProvider).should(times(1))
         .generateRefreshToken(testUser.getUsername(), testUser.getId(), roles);
+    then(refreshTokenRepository).should(times(1)).save(any(RefreshToken.class));
   }
 
   @Test
-  @DisplayName("Should fail login with invalid credentials")
+  @DisplayName("인증 실패: 잘못된 자격증명")
   void shouldFailLoginWithInvalidCredentials() {
     // given
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenThrow(new BadCredentialsException("Bad credentials"));
+    given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .willThrow(new BadCredentialsException("Bad credentials"));
 
     // when & then
     assertThatThrownBy(() -> authService.login(loginRequest))
         .isInstanceOf(BadCredentialsException.class)
         .hasMessageContaining("Bad credentials");
 
-    verify(authenticationManager, times(1)).authenticate(any());
-    verify(userRepository, never()).findByUsername(anyString());
-    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong(), anyList());
-    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong(), anyList());
+    then(authenticationManager).should(times(1)).authenticate(any());
+    then(userRepository).shouldHaveNoInteractions();
+    then(jwtTokenProvider).shouldHaveNoInteractions();
   }
 
   @Test
-  @DisplayName("Should fail login when user not found")
+  @DisplayName("인증 실패: 사용자를 찾을 수 없음")
   void shouldFailLoginWhenUserNotFound() {
     // given
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenReturn(mockAuthentication);
-    when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
+    given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .willReturn(mockAuthentication);
+    given(userRepository.findByUsername("testuser")).willReturn(Optional.empty());
 
     // when & then
     assertThatThrownBy(() -> authService.login(loginRequest))
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("User not found");
 
-    verify(authenticationManager, times(1)).authenticate(any());
-    verify(userRepository, times(1)).findByUsername("testuser");
-    verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyLong(), anyList());
-    verify(jwtTokenProvider, never()).generateRefreshToken(anyString(), anyLong(), anyList());
+    then(authenticationManager).should(times(1)).authenticate(any());
+    then(userRepository).should(times(1)).findByUsername("testuser");
+    then(jwtTokenProvider).shouldHaveNoInteractions();
   }
 
   @Test
-  @DisplayName("Should login successfully with multiple roles")
+  @DisplayName("login: 여러 역할을 가진 사용자 로그인 성공")
   void shouldLoginSuccessfullyWithMultipleRoles() {
     // given
-    User multiRoleUser =
+    var multiRoleUser =
         User.builder()
             .id(2L)
             .username("adminuser")
@@ -158,21 +166,25 @@ class AuthServiceLoginTest {
             .credentialsNonExpired(true)
             .build();
 
-    LoginRequest adminLoginRequest =
+    var adminLoginRequest =
         LoginRequest.builder().username("adminuser").password("password123").build();
 
-    String accessToken = "admin.jwt.token";
-    String refreshToken = "admin.jwt.refresh.token";
-    List<String> roles = List.of("ROLE_USER", "ROLE_ADMIN");
+    var accessToken = "admin.jwt.token";
+    var refreshToken = "admin.jwt.refresh.token";
+    var roles = List.of("ROLE_USER", "ROLE_ADMIN");
 
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenReturn(mockAuthentication);
-    when(userRepository.findByUsername("adminuser")).thenReturn(Optional.of(multiRoleUser));
-    when(jwtTokenProvider.generateAccessToken("adminuser", 2L, roles)).thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken("adminuser", 2L, roles)).thenReturn(refreshToken);
+    given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .willReturn(mockAuthentication);
+    given(userRepository.findByUsername("adminuser")).willReturn(Optional.of(multiRoleUser));
+    willDoNothing().given(refreshTokenRepository).deleteByUserId(anyLong());
+    given(jwtTokenProvider.generateAccessToken("adminuser", 2L, roles)).willReturn(accessToken);
+    given(jwtTokenProvider.generateRefreshToken("adminuser", 2L, roles)).willReturn(refreshToken);
+    given(jwtConfig.getRefreshExpiration()).willReturn(604800000L);
+    given(refreshTokenRepository.save(any(RefreshToken.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     // when
-    AuthResponse response = authService.login(adminLoginRequest);
+    var response = authService.login(adminLoginRequest);
 
     // then
     assertThat(response.getRoles()).hasSize(2);
@@ -180,20 +192,24 @@ class AuthServiceLoginTest {
   }
 
   @Test
-  @DisplayName("Should set Authentication in SecurityContext during login")
+  @DisplayName("login: SecurityContext에 인증 정보 설정")
   void shouldSetAuthenticationInSecurityContext() {
     // given
-    String accessToken = "jwt.token.here";
-    String refreshToken = "jwt.refresh.token";
-    List<String> roles = List.of("ROLE_USER");
+    var accessToken = "jwt.token.here";
+    var refreshToken = "jwt.refresh.token";
+    var roles = List.of("ROLE_USER");
 
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenReturn(mockAuthentication);
-    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(accessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(refreshToken);
+    given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .willReturn(mockAuthentication);
+    given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
+    willDoNothing().given(refreshTokenRepository).deleteByUserId(anyLong());
+    given(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(accessToken);
+    given(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(refreshToken);
+    given(jwtConfig.getRefreshExpiration()).willReturn(604800000L);
+    given(refreshTokenRepository.save(any(RefreshToken.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     // when
     authService.login(loginRequest);
@@ -201,30 +217,43 @@ class AuthServiceLoginTest {
     // then
     // SecurityContext configuration occurs but difficult to verify in unit tests
     // Verify in integration tests instead
-    verify(authenticationManager, times(1)).authenticate(any());
+    then(authenticationManager).should(times(1)).authenticate(any());
   }
 
   @Test
-  @DisplayName("Should issue new tokens when refresh token is valid")
+  @DisplayName("refreshToken: 유효한 토큰으로 새 토큰 발급 성공")
   void shouldIssueNewTokensWithValidRefreshToken() {
     // given
-    String refreshToken = "valid.refresh.token";
-    String refreshedAccessToken = "new.access.token";
-    String refreshedRefreshToken = "new.refresh.token";
-    List<String> roles = List.of("ROLE_USER");
+    var refreshToken = "valid.refresh.token";
+    var refreshedAccessToken = "new.access.token";
+    var refreshedRefreshToken = "new.refresh.token";
+    var roles = List.of("ROLE_USER");
 
-    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
-    when(jwtTokenProvider.isRefreshToken(refreshToken)).thenReturn(true);
-    when(jwtTokenProvider.getUsernameFromToken(refreshToken)).thenReturn("testuser");
-    when(jwtTokenProvider.getScopes(refreshToken)).thenReturn(roles);
-    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-    when(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(refreshedAccessToken);
-    when(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
-        .thenReturn(refreshedRefreshToken);
+    var storedToken =
+        RefreshToken.builder()
+            .id(1L)
+            .userId(1L)
+            .token(refreshToken)
+            .expiresAt(LocalDateTime.now().plusDays(7))
+            .revoked(false)
+            .build();
+
+    given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+    given(jwtTokenProvider.isRefreshToken(refreshToken)).willReturn(true);
+    given(refreshTokenRepository.findByToken(refreshToken)).willReturn(Optional.of(storedToken));
+    given(jwtTokenProvider.getUsernameFromToken(refreshToken)).willReturn("testuser");
+    given(jwtTokenProvider.getScopes(refreshToken)).willReturn(roles);
+    given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
+    given(jwtTokenProvider.generateAccessToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(refreshedAccessToken);
+    given(jwtTokenProvider.generateRefreshToken(testUser.getUsername(), testUser.getId(), roles))
+        .willReturn(refreshedRefreshToken);
+    given(jwtConfig.getRefreshExpiration()).willReturn(604800000L);
+    given(refreshTokenRepository.save(any(RefreshToken.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     // when
-    AuthResponse response = authService.refreshToken(refreshToken);
+    var response = authService.refreshToken(refreshToken);
 
     // then
     assertThat(response.getAccessToken()).isEqualTo(refreshedAccessToken);
@@ -232,29 +261,29 @@ class AuthServiceLoginTest {
   }
 
   @Test
-  @DisplayName("Should throw exception when refresh token is invalid")
+  @DisplayName("인증 실패: 유효하지 않은 refresh token")
   void shouldThrowWhenRefreshTokenInvalid() {
     // given
-    String refreshToken = "invalid.refresh.token";
-    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(false);
+    var refreshToken = "invalid.refresh.token";
+    given(jwtTokenProvider.validateToken(refreshToken)).willReturn(false);
 
     // when & then
     assertThatThrownBy(() -> authService.refreshToken(refreshToken))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(com.auth.server.exception.InvalidTokenException.class)
         .hasMessageContaining("Invalid refresh token");
   }
 
   @Test
-  @DisplayName("Should throw exception when token is not refresh type")
+  @DisplayName("인증 실패: refresh token이 아닌 토큰")
   void shouldThrowWhenTokenIsNotRefreshType() {
     // given
-    String refreshToken = "access.token";
-    when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
-    when(jwtTokenProvider.isRefreshToken(refreshToken)).thenReturn(false);
+    var refreshToken = "access.token";
+    given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+    given(jwtTokenProvider.isRefreshToken(refreshToken)).willReturn(false);
 
     // when & then
     assertThatThrownBy(() -> authService.refreshToken(refreshToken))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(com.auth.server.exception.InvalidTokenException.class)
         .hasMessageContaining("Invalid refresh token");
   }
 }
