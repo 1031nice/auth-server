@@ -61,6 +61,21 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
   }
 
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<Map<String, Object>> handleRateLimitExceededException(
+      RateLimitExceededException ex) {
+    log.warn("Rate limit exceeded: {}", ex.getMessage());
+
+    Map<String, Object> error = new HashMap<>();
+    error.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+    error.put("message", ex.getMessage());
+    error.put("error", "RATE_LIMIT_EXCEEDED");
+
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .header("Retry-After", "60")
+        .body(error);
+  }
+
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
     log.error("RuntimeException: {}", ex.getMessage());

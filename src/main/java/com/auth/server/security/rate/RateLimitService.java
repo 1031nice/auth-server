@@ -1,8 +1,10 @@
 package com.auth.server.security.rate;
 
 import com.auth.server.config.RateLimitProperties;
+import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.Refill;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -22,11 +24,9 @@ public class RateLimitService {
     try {
       Supplier<BucketConfiguration> configSupplier =
           () -> {
-            io.github.bucket4j.Bandwidth bandwidth =
-                io.github.bucket4j.Bandwidth.classic(
-                    capacity,
-                    io.github.bucket4j.Refill.intervally(
-                        refillRate, Duration.ofSeconds(refillPeriodSeconds)));
+            Bandwidth bandwidth =
+                Bandwidth.classic(
+                    capacity, Refill.intervally(refillRate, Duration.ofSeconds(refillPeriodSeconds)));
 
             return BucketConfiguration.builder().addLimit(bandwidth).build();
           };
