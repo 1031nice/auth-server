@@ -30,6 +30,50 @@ jwt:
   expiration: 86400000 # 24 hours in milliseconds
   refresh-expiration: 604800000 # 7 days in milliseconds
 
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+rate-limit:
+  redis:
+    enabled: true
+  default:
+    capacity: 100
+    refill-rate: 100
+    refill-period-seconds: 60
+  endpoints:
+    login:
+      capacity: 10
+      refill-rate: 10
+      refill-period-seconds: 60
+      key-type: USERNAME
+    refresh:
+      capacity: 20
+      refill-rate: 20
+      refill-period-seconds: 60
+      key-type: USERNAME
+    oauth2-token:
+      capacity: 100
+      refill-rate: 100
+      refill-period-seconds: 60
+      key-type: IP
+    oauth2-authorize:
+      capacity: 50
+      refill-rate: 50
+      refill-period-seconds: 60
+      key-type: IP
+  account-lockout:
+    max-attempts: 5
+    lockout-duration-seconds: 900 # 15 minutes
+
 logging:
   level:
     com.auth: DEBUG

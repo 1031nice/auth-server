@@ -9,6 +9,8 @@ Spring Boot 기반 JWT 인증 서버.
 - Spring Security OAuth2 Authorization Server
 - JPA/Hibernate
 - H2 (개발용 인메모리 DB)
+- Redis (Rate Limiting용)
+- Bucket4j (Rate Limiting 라이브러리)
 
 ## 현재 제공 기능
 - 로그인: `username`/`password`로 인증 후 JWT 발급
@@ -22,9 +24,25 @@ Spring Boot 기반 JWT 인증 서버.
 - **OAuth2 Client 관리**: OAuth2 클라이언트 등록 및 관리 API
 
 ## 실행 방법
+
+### 사전 요구사항
+- Java 21
+- Docker & Docker Compose (Redis 실행용)
+
+### 1. Redis 실행
+```bash
+docker-compose up -d redis
+```
+
+### 2. 애플리케이션 실행
 ```bash
 ./gradlew build
 ./gradlew bootRun
+```
+
+### Redis 중지
+```bash
+docker-compose down
 ```
 
 ### 주요 엔드포인트
