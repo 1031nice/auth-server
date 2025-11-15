@@ -1,5 +1,6 @@
 package com.auth.server.config;
 
+import com.auth.server.security.OidcUserInfoService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -27,13 +28,23 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 @Configuration
 public class OAuth2AuthorizationServerConfig {
 
+  private final OidcUserInfoService oidcUserInfoService;
+
+  public OAuth2AuthorizationServerConfig(OidcUserInfoService oidcUserInfoService) {
+    this.oidcUserInfoService = oidcUserInfoService;
+  }
+
   @Bean
   @Order(1)
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
       throws Exception {
     OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
     http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-        .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+        .oidc(
+            (oidc) ->
+                oidc.userInfoEndpoint(
+                    (userInfo) ->
+                        userInfo.userInfoMapper(oidcUserInfoService::loadUser))); // Enable OpenID Connect 1.0 with custom UserInfo
 
     http
         // Redirect to the login page when not authenticated from the
