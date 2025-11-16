@@ -70,7 +70,7 @@ public class OAuth2RegisteredClientRepository implements RegisteredClientReposit
         .clientSettings(
             ClientSettings.builder()
                 .requireAuthorizationConsent(false)
-                .requireProofKey(false)
+                .requireProofKey(true)
                 .build())
         .tokenSettings(
             TokenSettings.builder()
