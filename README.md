@@ -1,92 +1,225 @@
 # Auth Platform
 
-인증 및 인가 플랫폼 프로젝트. OAuth2/OIDC 표준을 준수하는 인증 및 인가 서버를 제공하는 멀티모듈 프로젝트입니다.
+Centralized authentication and authorization platform. OAuth2/OIDC-compliant authentication server for multiple side projects.
 
-## 프로젝트 구조
+## Overview
 
-이 프로젝트는 다음 두 개의 서브모듈로 구성됩니다:
+A centralized authentication system that can be shared across multiple applications. Use this platform to handle user authentication for various side projects like Slack clones, blogs, e-commerce sites, etc.
 
-- **oauth2-server**: OAuth2 Authorization Server (포트: 8081) - 사용자 인증 및 토큰 발급
-- **resource-server**: OAuth2 Resource Server (포트: 8082) - 보호된 리소스 제공
+### Key Features
 
-## 기술 스택
+- **Centralized Authentication**: Manage user authentication for multiple applications with a single auth server
+- **OAuth2/OIDC Standard**: Compatible with various clients following standard protocols
+- **User Signup Support**: Automatic redirect for signup requests from external applications
+- **Enhanced Security**: PKCE, Refresh Token Rotation, Rate Limiting, and more
+
+## Project Structure
+
+This project consists of two submodules:
+
+- **oauth2-server**: OAuth2 Authorization Server (Port: 8081) - User authentication and token issuance
+- **resource-server**: OAuth2 Resource Server (Port: 8082) - Protected resource provider
+
+## Tech Stack
+
 - Java 21
 - Spring Boot 3.2
 - Spring Security
 - Spring Security OAuth2 Authorization Server
 - JPA/Hibernate
-- H2 (개발용 인메모리 DB)
-- Redis (Rate Limiting용)
-- Bucket4j (Rate Limiting 라이브러리)
+- H2 (In-memory DB for development)
+- Redis (for Rate Limiting)
+- Bucket4j (Rate Limiting library)
 
-## 현재 제공 기능
+## Features
 
 ### oauth2-server (OAuth2 Authorization Server)
-- **사용자 인증**: 폼 기반 로그인 (`/login`)
-- **OAuth2 Authorization Server**: 표준 OAuth2/OIDC 엔드포인트 제공
-- **OAuth2 Client 관리**: OAuth2 클라이언트 등록 및 관리 API
-- **지원하는 Grant Types**: 
-  - `authorization_code`: 인증 코드 플로우 (웹 애플리케이션용)
-  - `client_credentials`: 클라이언트 자격 증명 플로우 (서버 간 통신용)
-  - `refresh_token`: 리프레시 토큰 플로우 (토큰 갱신용)
-- **JWK Set 엔드포인트**: `/oauth2/jwks` - Resource Server에서 토큰 검증에 사용
-- **역할 기반 접근 제어**: 사용자 권한(RBAC) 적용
-- **비밀번호 암호화**: BCrypt 이용
-- **Refresh Token Rotation (RTR)**: Refresh Token 사용 시 자동 회전 및 재사용 감지
-- **PKCE (Proof Key for Code Exchange)**: 공개 클라이언트 보안 강화
-- **Audit Logging**: 인증 및 토큰 발급 이벤트 로깅
-- **Rate Limiting**: Redis 기반 요청 제한
 
-### resource-server (OAuth2 리소스 서버)
-- **OIDC UserInfo 엔드포인트**: `/userinfo` - OAuth2 토큰으로 사용자 정보 제공
-- **JWT 토큰 검증**: OAuth2 Authorization Server에서 발급한 토큰 검증
-- **보호된 리소스 제공**: OAuth2 토큰 기반 인증이 필요한 리소스 제공
+- **User Signup**: `/signup` - Email and password signup with redirect_uri support
+- **User Login**: `/login` - Form-based login
+- **OAuth2 Authorization Server**: Standard OAuth2/OIDC endpoints
+- **OAuth2 Client Management**: Client registration and management API
+- **Supported Grant Types**:
+  - `authorization_code`: Authorization code flow (for web applications)
+  - `client_credentials`: Client credentials flow (for server-to-server communication)
+  - `refresh_token`: Refresh token flow (for token renewal)
+- **JWK Set Endpoint**: `/oauth2/jwks` - Used by Resource Server for token validation
+- **Role-Based Access Control**: RBAC implementation
+- **Password Encryption**: BCrypt
+- **Refresh Token Rotation (RTR)**: Automatic rotation and reuse detection
+- **PKCE (Proof Key for Code Exchange)**: Enhanced security for public clients
+- **Audit Logging**: Authentication and token issuance event logging
+- **Rate Limiting**: Redis-based request limiting
 
-## 실행 방법
+### resource-server (OAuth2 Resource Server)
 
-### 사전 요구사항
+- **OIDC UserInfo Endpoint**: `/userinfo` - User information via OAuth2 token
+- **JWT Token Validation**: Validates tokens issued by OAuth2 Authorization Server
+- **Protected Resources**: Resources requiring OAuth2 token-based authentication
+
+## Getting Started
+
+### Prerequisites
+
 - Java 21
-- Docker & Docker Compose (Redis 실행용)
+- Docker & Docker Compose (for Redis)
 
-### 1. Redis 실행
+### 1. Start Redis
+
 ```bash
 docker-compose up -d redis
 ```
 
-### 2. 애플리케이션 실행
+### 2. Run Applications
 
-#### oauth2-server 실행
+#### oauth2-server
+
 ```bash
 ./gradlew :oauth2-server:bootRun
 ```
 
-#### resource-server 실행
+#### resource-server
+
 ```bash
 ./gradlew :resource-server:bootRun
 ```
 
-#### 전체 빌드
+#### Build
+
 ```bash
 ./gradlew build
 ```
 
-### Redis 중지
+### Stop Redis
+
 ```bash
 docker-compose down
 ```
 
-## 주요 엔드포인트
+## Integration Guide
 
-### oauth2-server 엔드포인트
+### 1. Register OAuth2 Client
 
-#### 사용자 로그인
-OAuth2 Authorization Code Flow를 사용할 때 사용자가 로그인하는 페이지입니다.
+Register an OAuth2 client before using this auth platform in your application.
 
-`GET /login` - 로그인 페이지
-`POST /login` - 로그인 처리
+```bash
+POST http://localhost:8081/api/v1/oauth2/clients
+Content-Type: application/json
+Authorization: Bearer {admin_token}
 
-#### OAuth2 Client 등록
-OAuth2를 사용하기 전에 클라이언트를 등록해야 합니다.
+{
+  "clientId": "my-slack-clone",
+  "clientSecret": "my-secret-key",
+  "redirectUris": [
+    "http://localhost:3000/auth/callback",
+    "http://localhost:3000/signup/callback"
+  ],
+  "scopes": ["read", "write"],
+  "grantTypes": ["authorization_code", "refresh_token"]
+}
+```
+
+**Important**: Include the callback URL for signup completion in `redirectUris`.
+
+### 2. Signup Integration
+
+Redirect users to the auth platform when they click the signup button:
+
+```javascript
+// Example: In Slack clone app
+function redirectToSignup() {
+  const redirectUri = encodeURIComponent('http://localhost:3000/auth/callback');
+  const clientId = 'my-slack-clone';
+  window.location.href = `http://localhost:8081/signup?redirect_uri=${redirectUri}&client_id=${clientId}`;
+}
+```
+
+After signup, users are automatically redirected to `redirect_uri?success=true`.
+
+### 3. Login Integration (OAuth2 Authorization Code Flow)
+
+```javascript
+// 1. Redirect user to auth server
+function redirectToLogin() {
+  const params = new URLSearchParams({
+    client_id: 'my-slack-clone',
+    response_type: 'code',
+    redirect_uri: 'http://localhost:3000/auth/callback',
+    scope: 'read write',
+    state: generateRandomState() // For CSRF protection
+  });
+  window.location.href = `http://localhost:8081/oauth2/authorize?${params}`;
+}
+
+// 2. Exchange authorization code for tokens in callback
+async function handleCallback(code) {
+  const response = await fetch('http://localhost:8081/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + btoa('my-slack-clone:my-secret-key')
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: 'http://localhost:3000/auth/callback'
+    })
+  });
+  
+  const tokens = await response.json();
+  // Store access_token and refresh_token
+}
+```
+
+### 4. Get User Info
+
+```javascript
+// Get user information from Resource Server
+async function getUserInfo(accessToken) {
+  const response = await fetch('http://localhost:8082/userinfo', {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+  
+  const userInfo = await response.json();
+  // { sub, name, email, email_verified, preferred_username }
+}
+```
+
+## API Endpoints
+
+### oauth2-server Endpoints
+
+#### User Signup
+
+Used when external applications request user signup.
+
+**Signup Page**
+```
+GET /signup?redirect_uri={callback_url}&client_id={client_id}
+```
+
+**Signup Processing**
+```
+POST /signup
+Content-Type: application/x-www-form-urlencoded
+
+email=user@example.com&password=password123&redirectUri={callback_url}&clientId={client_id}
+```
+
+**Response**: Redirects to `redirect_uri?success=true` on success
+
+#### User Login
+
+Login page used with OAuth2 Authorization Code Flow.
+
+`GET /login` - Login page
+`POST /login` - Login processing
+
+#### OAuth2 Client Registration
+
+Register a client before using OAuth2.
 
 `POST /api/v1/oauth2/clients`
 ```json
@@ -99,18 +232,20 @@ OAuth2를 사용하기 전에 클라이언트를 등록해야 합니다.
 }
 ```
 
-#### OAuth2 Client 관리
-- `GET /api/v1/oauth2/clients/{clientId}` - 클라이언트 조회
-- `GET /api/v1/oauth2/clients` - 전체 클라이언트 목록
-- `DELETE /api/v1/oauth2/clients/{clientId}` - 클라이언트 삭제
+#### OAuth2 Client Management
+
+- `GET /api/v1/oauth2/clients/{clientId}` - Get client
+- `GET /api/v1/oauth2/clients` - List all clients
+- `DELETE /api/v1/oauth2/clients/{clientId}` - Delete client
 
 #### OAuth2 Authorization Code Flow
-1. **인증 요청**: 사용자를 인증 서버로 리다이렉트
+
+1. **Authorization Request**: Redirect user to auth server
 ```
 GET /oauth2/authorize?client_id=my-client&response_type=code&redirect_uri=http://localhost:3000/callback&scope=read write
 ```
 
-2. **토큰 발급**: 인증 코드로 액세스 토큰 교환
+2. **Token Exchange**: Exchange authorization code for access token
 ```
 POST /oauth2/token
 Content-Type: application/x-www-form-urlencoded
@@ -118,7 +253,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=authorization_code&code={authorization_code}&client_id=my-client&client_secret=my-secret&redirect_uri=http://localhost:3000/callback
 ```
 
-응답:
+Response:
 ```json
 {
   "access_token": "eyJhbGciOiJSUzI1NiJ9...",
@@ -130,7 +265,8 @@ grant_type=authorization_code&code={authorization_code}&client_id=my-client&clie
 ```
 
 #### OAuth2 Client Credentials Flow
-서버 간 통신에 사용하는 플로우입니다.
+
+For server-to-server communication.
 
 ```
 POST /oauth2/token
@@ -140,7 +276,7 @@ Authorization: Basic {base64(client_id:client_secret)}
 grant_type=client_credentials&scope=read write
 ```
 
-응답:
+Response:
 ```json
 {
   "access_token": "eyJhbGciOiJSUzI1NiJ9...",
@@ -151,7 +287,8 @@ grant_type=client_credentials&scope=read write
 ```
 
 #### OAuth2 Token Refresh
-리프레시 토큰으로 새로운 액세스 토큰을 발급받습니다.
+
+Get a new access token using refresh token.
 
 ```
 POST /oauth2/token
@@ -161,29 +298,70 @@ Authorization: Basic {base64(client_id:client_secret)}
 grant_type=refresh_token&refresh_token={refresh_token}
 ```
 
-#### OAuth2 Grant Types 지원
-- `authorization_code`: 인증 코드 플로우 (웹 애플리케이션용)
-- `client_credentials`: 클라이언트 자격 증명 플로우 (서버 간 통신용)
-- `refresh_token`: 리프레시 토큰 플로우 (토큰 갱신용)
+#### Supported OAuth2 Grant Types
 
-### resource-server 엔드포인트
+- `authorization_code`: Authorization code flow (for web applications)
+- `client_credentials`: Client credentials flow (for server-to-server communication)
+- `refresh_token`: Refresh token flow (for token renewal)
+
+### resource-server Endpoints
 
 #### OIDC UserInfo
-OAuth2 Authorization Server에서 발급한 액세스 토큰을 사용하여 사용자 정보를 조회합니다.
+
+Get user information using access token issued by OAuth2 Authorization Server.
 
 ```
 GET /userinfo
 Authorization: Bearer {access_token}
 ```
 
-응답:
+Response:
 ```json
 {
   "sub": "1",
-  "name": "demo",
-  "email": "demo@example.com",
+  "name": "user@example.com",
+  "email": "user@example.com",
   "email_verified": true,
-  "preferred_username": "demo"
+  "preferred_username": "user@example.com"
 }
 ```
 
+**Note**: `name` and `preferred_username` are the user's email address. This platform uses email as the user identifier.
+
+## Usage Example
+
+### Scenario: Using Auth Platform in Slack Clone App
+
+1. **Initial Setup**
+   ```bash
+   # Register OAuth2 Client
+   curl -X POST http://localhost:8081/api/v1/oauth2/clients \
+     -H "Content-Type: application/json" \
+     -d '{
+       "clientId": "slack-clone",
+       "clientSecret": "secret123",
+       "redirectUris": ["http://localhost:3000/callback"],
+       "scopes": ["read", "write"],
+       "grantTypes": ["authorization_code", "refresh_token"]
+     }'
+   ```
+
+2. **Signup Flow**
+   - User clicks "Sign Up" in Slack clone app
+   - Redirect to `http://localhost:8081/signup?redirect_uri=http://localhost:3000/callback&client_id=slack-clone`
+   - User enters email/password on auth platform
+   - After signup, redirect to `http://localhost:3000/callback?success=true`
+
+3. **Login Flow**
+   - User clicks "Login" in Slack clone app
+   - Start OAuth2 Authorization Code Flow
+   - User logs in on auth platform
+   - Exchange authorization code for access token
+   - Get user information using token
+
+## Security Considerations
+
+- **redirect_uri Validation**: Only registered redirect_uris are allowed for signup and authentication
+- **PKCE**: Recommended for public clients (mobile apps, etc.)
+- **HTTPS**: Must use HTTPS in production
+- **Client Secret Management**: Keep Client Secret secure and never expose it in client code
