@@ -18,6 +18,13 @@ public class UserController {
 
   private final UserService userService;
 
+  @GetMapping("/")
+  public String home() {
+    // OAuth2 Authorization Server 홈 페이지
+    // 로그인 성공 후 또는 직접 접근 시 Swagger UI로 리다이렉트
+    return "redirect:/swagger-ui.html";
+  }
+
   @GetMapping("/login")
   public String showLoginForm(
       @RequestParam(required = false) String error,
