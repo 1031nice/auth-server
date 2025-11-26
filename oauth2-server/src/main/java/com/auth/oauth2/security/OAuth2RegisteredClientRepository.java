@@ -70,7 +70,9 @@ public class OAuth2RegisteredClientRepository implements RegisteredClientReposit
         .clientSettings(
             ClientSettings.builder()
                 .requireAuthorizationConsent(false)
-                .requireProofKey(true)
+                // PKCE is optional: clients can use PKCE if they want, but it's not required
+                // This allows registered confidential clients to work without PKCE
+                .requireProofKey(false)
                 .build())
         .tokenSettings(
             TokenSettings.builder()
