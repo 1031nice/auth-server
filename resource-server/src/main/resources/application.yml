@@ -36,6 +36,15 @@ spring:
 server:
   port: 8082
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
 # OAuth2 Resource Server 설정
 # OAuth2 Authorization Server의 JWK Set 엔드포인트를 참조
 spring.security.oauth2.resourceserver.jwt:
