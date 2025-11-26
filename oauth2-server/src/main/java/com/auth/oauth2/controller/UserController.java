@@ -18,6 +18,24 @@ public class UserController {
 
   private final UserService userService;
 
+  @GetMapping("/login")
+  public String showLoginForm(
+      @RequestParam(required = false) String error,
+      @RequestParam(required = false) String logout,
+      @RequestParam(required = false) String redirectUri,
+      @RequestParam(required = false) String clientId,
+      Model model) {
+    if (error != null) {
+      model.addAttribute("error", "이메일 또는 비밀번호가 올바르지 않습니다.");
+    }
+    if (logout != null) {
+      model.addAttribute("logout", true);
+    }
+    model.addAttribute("redirectUri", redirectUri);
+    model.addAttribute("clientId", clientId);
+    return "login";
+  }
+
   @GetMapping("/signup")
   public String showSignupForm(
       @RequestParam(required = false) String redirectUri,
