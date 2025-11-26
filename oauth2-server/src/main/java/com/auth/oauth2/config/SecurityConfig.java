@@ -32,7 +32,9 @@ public class SecurityConfig {
             form ->
                 form.loginPage("/login")
                     .loginProcessingUrl("/login")
-                    .defaultSuccessUrl("/", true)
+                    // false: saved request가 있으면 saved request로 리다이렉트 (OAuth2 flow)
+                    // saved request가 없으면 defaultSuccessUrl로 리다이렉트
+                    .defaultSuccessUrl("/", false)
                     .permitAll())
         .authorizeHttpRequests(
             auth ->
