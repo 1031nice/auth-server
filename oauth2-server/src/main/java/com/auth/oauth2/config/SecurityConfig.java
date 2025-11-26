@@ -19,7 +19,14 @@ public class SecurityConfig {
   @Bean
   @Order(2)
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
+    http.csrf(
+            csrf ->
+                csrf
+                    // OAuth2 엔드포인트는 state 파라미터로 CSRF 보호 (OAuth2 표준)
+                    // 클라이언트 자격증명으로 보호되므로 CSRF 예외 처리
+                    .ignoringRequestMatchers("/oauth2/**")
+                    // API 엔드포인트는 JWT 토큰으로 보호되므로 CSRF 불필요
+                    .ignoringRequestMatchers("/api/**"))
         // OAuth2 Authorization Code Flow를 위해 세션 사용
         .formLogin(
             form ->

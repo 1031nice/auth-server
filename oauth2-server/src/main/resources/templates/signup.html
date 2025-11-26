@@ -112,6 +112,7 @@
         <div th:if="${error}" class="error-message" th:text="${error}"></div>
         
         <form th:action="@{/signup}" th:object="${signupRequest}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <input type="hidden" th:field="*{redirectUri}" th:value="${redirectUri}">
             <input type="hidden" th:field="*{clientId}" th:value="${clientId}">
             
