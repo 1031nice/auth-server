@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization (
     refresh_token_value BLOB,
     refresh_token_issued_at TIMESTAMP,
     refresh_token_expires_at TIMESTAMP,
-    refresh_token_metadata VARCHAR(2000)
+    refresh_token_metadata VARCHAR(2000),
+    user_code_value BLOB,
+    user_code_issued_at TIMESTAMP,
+    user_code_expires_at TIMESTAMP,
+    user_code_metadata VARCHAR(2000),
+    device_code_value BLOB,
+    device_code_issued_at TIMESTAMP,
+    device_code_expires_at TIMESTAMP,
+    device_code_metadata VARCHAR(2000)
 );
 
