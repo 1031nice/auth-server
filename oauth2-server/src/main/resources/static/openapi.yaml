@@ -375,12 +375,12 @@ paths:
 components:
   securitySchemes:
     bearerAuth:
-      type: http
+      type: HTTP
       scheme: bearer
       bearerFormat: JWT
       description: OAuth2 access token
     basicAuth:
-      type: http
+      type: HTTP
       scheme: basic
       description: Client credentials (client_id:client_secret)
 
