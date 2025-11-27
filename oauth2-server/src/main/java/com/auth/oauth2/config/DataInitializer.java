@@ -35,11 +35,11 @@ public class DataInitializer {
 
   private void initializeDefaultUsers() {
     // Create default test user
-    if (!userRepository.existsByEmail("test@example.com")) {
+    if (!userRepository.existsByEmail("t@t.com")) {
       User testUser =
           User.builder()
-              .email("test@example.com")
-              .password(userPasswordEncoder.encode("password123"))
+              .email("t@t.com")
+              .password(userPasswordEncoder.encode("1234"))
               .roles(Collections.singletonList(Role.ROLE_USER))
               .enabled(true)
               .accountNonExpired(true)
@@ -48,7 +48,7 @@ public class DataInitializer {
               .build();
 
       userRepository.save(testUser);
-      log.info("Default test user created: test@example.com / password123");
+      log.info("Default test user created: t@t.com / 1234");
     } else {
       log.debug("Default test user already exists");
     }
