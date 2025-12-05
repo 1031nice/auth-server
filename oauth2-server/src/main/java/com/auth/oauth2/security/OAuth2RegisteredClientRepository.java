@@ -69,7 +69,6 @@ public class OAuth2RegisteredClientRepository implements RegisteredClientReposit
       builder.scope("read").scope("write");
     }
 
-    // 클라이언트별 토큰 TTL 설정 가져오기
     var tokenSettings = getTokenSettings(client);
 
     return builder
@@ -85,7 +84,7 @@ public class OAuth2RegisteredClientRepository implements RegisteredClientReposit
   }
 
   private TokenSettings getTokenSettings(OAuth2Client client) {
-    // 클라이언트가 커스텀 TTL을 가지고 있으면 우선 사용, 없으면 기본 설정 사용
+    // Use custom TTL if client has one, otherwise use default settings
     Duration accessTokenTtl =
         client.getCustomAccessTokenTtlSeconds() != null
             ? Duration.ofSeconds(client.getCustomAccessTokenTtlSeconds())

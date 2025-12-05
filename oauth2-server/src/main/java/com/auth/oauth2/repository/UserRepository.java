@@ -12,7 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   boolean existsByEmail(String email);
 
-  // Spring Security 호환성을 위한 메서드 (실제로는 email로 조회)
+  // Method for Spring Security compatibility (actually queries by email)
   default Optional<User> findByUsername(String username) {
     return findByEmail(username);
   }

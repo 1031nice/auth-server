@@ -68,8 +68,8 @@ public class User {
   }
 
   /**
-   * Spring Security의 UserDetailsService에서 사용하는 username을 반환합니다.
-   * 실제로는 email을 반환합니다.
+   * Returns the username used by Spring Security's UserDetailsService.
+   * Actually returns the email address.
    */
   public String getUsername() {
     return email;

@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
   @Override
   @Transactional(readOnly = true)
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    // username 파라미터는 실제로는 email입니다
+    // The username parameter is actually an email
     User user =
         userRepository
             .findByEmail(username)

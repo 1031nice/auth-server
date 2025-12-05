@@ -31,15 +31,15 @@ public class OAuth2ClientRequest {
   private List<String> grantTypes;
 
   /**
-   * 커스텀 액세스 토큰 TTL (초 단위)
-   * null이면 기본 설정 사용
+   * Custom access token TTL in seconds.
+   * Uses default settings if null.
    */
   @Min(value = 1, message = "Access token TTL must be at least 1 second")
   private Long customAccessTokenTtlSeconds;
 
   /**
-   * 커스텀 리프레시 토큰 TTL (초 단위)
-   * null이면 기본 설정 사용
+   * Custom refresh token TTL in seconds.
+   * Uses default settings if null.
    */
   @Min(value = 1, message = "Refresh token TTL must be at least 1 second")
   private Long customRefreshTokenTtlSeconds;

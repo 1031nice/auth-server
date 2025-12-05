@@ -23,7 +23,7 @@ public class DataInitializer {
   private final UserRepository userRepository;
   private final OAuth2ClientRepository clientRepository;
   private final OAuth2ClientProperties clientProperties;
-  // BCryptPasswordEncoder를 빈으로 등록하지 않고 직접 생성하여 빈 충돌 방지
+  // Create BCryptPasswordEncoder directly instead of registering as bean to avoid bean conflicts
   private final BCryptPasswordEncoder userPasswordEncoder = new BCryptPasswordEncoder();
 
   @EventListener(ApplicationReadyEvent.class)
@@ -60,7 +60,7 @@ public class DataInitializer {
       initializeSlackClient();
     }
 
-    // Test client (조건부)
+    // Test client (conditional)
     if (clientProperties.getTestClient().isEnabled()) {
       initializeTestClient();
     }
@@ -94,7 +94,7 @@ public class DataInitializer {
     var testConfig = clientProperties.getTestClient();
 
     if (!clientRepository.existsByClientId(testConfig.getClientId())) {
-      // 테스트 클라이언트용 커스텀 TTL (100년 = 실질적으로 만료 안됨)
+      // Custom TTL for test client (100 years = effectively never expires)
       long customTtlSeconds = testConfig.getTokenSettings().getAccessTokenTtl().getSeconds();
 
       OAuth2Client testClient =
@@ -114,7 +114,7 @@ public class DataInitializer {
           "Test client created with custom TTL: clientId={}, accessTokenTtl={}days, "
               + "refreshTokenTtl={}days, redirectUris={}",
           testConfig.getClientId(),
-          customTtlSeconds / 86400, // 초를 일수로 변환
+          customTtlSeconds / 86400,
           customTtlSeconds / 86400,
           testConfig.getRedirectUris());
     } else {

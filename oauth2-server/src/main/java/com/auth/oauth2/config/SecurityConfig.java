@@ -22,8 +22,8 @@ public class SecurityConfig {
   @Order(2)
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
-    // 사용자 인증용 DaoAuthenticationProvider 설정
-    // BCryptPasswordEncoder를 빈으로 등록하지 않고 직접 생성하여 빈 충돌 방지
+    // Configure DaoAuthenticationProvider for user authentication
+    // Create BCryptPasswordEncoder directly instead of registering as bean to avoid bean conflicts
     BCryptPasswordEncoder userPasswordEncoder = new BCryptPasswordEncoder();
     DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
     authProvider.setUserDetailsService(userDetailsService);
@@ -33,18 +33,18 @@ public class SecurityConfig {
         .csrf(
             csrf ->
                 csrf
-                    // OAuth2 엔드포인트는 state 파라미터로 CSRF 보호 (OAuth2 표준)
-                    // 클라이언트 자격증명으로 보호되므로 CSRF 예외 처리
+                    // OAuth2 endpoints are CSRF-protected by state parameter (OAuth2 standard)
+                    // CSRF exemption since endpoints are protected by client credentials
                     .ignoringRequestMatchers("/oauth2/**")
-                    // API 엔드포인트는 JWT 토큰으로 보호되므로 CSRF 불필요
+                    // API endpoints don't need CSRF protection as they're secured by JWT tokens
                     .ignoringRequestMatchers("/api/**"))
-        // OAuth2 Authorization Code Flow를 위해 세션 사용
+        // Use sessions for OAuth2 Authorization Code Flow
         .formLogin(
             form ->
                 form.loginPage("/login")
                     .loginProcessingUrl("/login")
-                    // false: saved request가 있으면 saved request로 리다이렉트 (OAuth2 flow)
-                    // saved request가 없으면 defaultSuccessUrl로 리다이렉트
+                    // false: redirect to saved request if exists (OAuth2 flow)
+                    // otherwise redirect to defaultSuccessUrl
                     .defaultSuccessUrl("/", false)
                     .permitAll())
         .authorizeHttpRequests(
@@ -73,8 +73,8 @@ public class SecurityConfig {
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-    // OAuth2 client secret 검증용: OAuth2 표준에 따라 평문 비교
-    // OAuth2AuthorizationServerConfig에서 @Qualifier로 명시적으로 지정
+    // For OAuth2 client secret validation: compare in plain text per OAuth2 standard
+    // Explicitly specified with @Qualifier in OAuth2AuthorizationServerConfig
     return NoOpPasswordEncoder.getInstance();
   }
 

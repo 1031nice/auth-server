@@ -20,8 +20,8 @@ public class UserController {
 
   @GetMapping("/")
   public String home() {
-    // OAuth2 Authorization Server 홈 페이지
-    // 로그인 성공 후 또는 직접 접근 시 Swagger UI로 리다이렉트
+    // OAuth2 Authorization Server home page
+    // Redirects to Swagger UI after successful login or direct access
     return "redirect:/swagger-ui.html";
   }
 
@@ -33,7 +33,7 @@ public class UserController {
       @RequestParam(required = false) String clientId,
       Model model) {
     if (error != null) {
-      model.addAttribute("error", "이메일 또는 비밀번호가 올바르지 않습니다.");
+      model.addAttribute("error", "Email or password is incorrect.");
     }
     if (logout != null) {
       model.addAttribute("logout", true);
@@ -69,7 +69,7 @@ public class UserController {
     try {
       userService.signup(signupRequest);
 
-      // 회원가입 성공 시 리다이렉트
+      // Redirect on successful signup
       if (signupRequest.getRedirectUri() != null && !signupRequest.getRedirectUri().isEmpty()) {
         return "redirect:" + signupRequest.getRedirectUri() + "?success=true";
       } else {

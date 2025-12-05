@@ -17,8 +17,8 @@ public class UserInfoController {
   private final OidcUserInfoService oidcUserInfoService;
 
   /**
-   * OIDC UserInfo 엔드포인트
-   * OAuth2 Authorization Server에서 발급한 액세스 토큰을 사용하여 사용자 정보를 반환합니다.
+   * OIDC UserInfo endpoint.
+   * Returns user information using the access token issued by the OAuth2 Authorization Server.
    */
   @GetMapping("/userinfo")
   public ResponseEntity<OidcUserInfo> getUserInfo(Authentication authentication) {

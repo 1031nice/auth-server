@@ -56,15 +56,15 @@ public class OAuth2Client {
   private Boolean enabled = true;
 
   /**
-   * 커스텀 액세스 토큰 TTL (초 단위)
-   * null이면 기본 설정 사용
+   * Custom access token TTL in seconds.
+   * Uses default settings if null.
    */
   @Column(name = "custom_access_token_ttl_seconds")
   private Long customAccessTokenTtlSeconds;
 
   /**
-   * 커스텀 리프레시 토큰 TTL (초 단위)
-   * null이면 기본 설정 사용
+   * Custom refresh token TTL in seconds.
+   * Uses default settings if null.
    */
   @Column(name = "custom_refresh_token_ttl_seconds")
   private Long customRefreshTokenTtlSeconds;

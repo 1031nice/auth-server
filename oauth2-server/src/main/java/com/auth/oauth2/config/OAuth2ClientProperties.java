@@ -52,7 +52,7 @@ public class OAuth2ClientProperties {
   @Getter
   @Setter
   public static class TestClient {
-    private boolean enabled = false; // 프로덕션에서는 기본 비활성화
+    private boolean enabled = false; // Disabled by default in production
     private String clientId = "test-client";
     private String clientSecret = "test-secret-key";
     private List<String> redirectUris = new ArrayList<>();
@@ -66,7 +66,7 @@ public class OAuth2ClientProperties {
     @Getter
     @Setter
     public static class TokenSettings {
-      // 100년 = 36500일 (실질적으로 만료 안됨)
+      // 100 years = 36500 days (effectively never expires)
       private Duration accessTokenTtl = Duration.ofDays(36500);
       private Duration refreshTokenTtl = Duration.ofDays(36500);
     }

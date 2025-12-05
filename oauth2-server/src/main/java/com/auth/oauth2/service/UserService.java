@@ -18,28 +18,25 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final OAuth2ClientRepository clientRepository;
-  // BCryptPasswordEncoder를 빈으로 등록하지 않고 직접 생성하여 빈 충돌 방지
+  // Create BCryptPasswordEncoder directly instead of registering as bean to avoid bean conflicts
   private final BCryptPasswordEncoder userPasswordEncoder = new BCryptPasswordEncoder();
 
   @Transactional
   public User signup(SignupRequest request) {
-    // Email 중복 검증
     if (userRepository.existsByEmail(request.getEmail())) {
       throw new RuntimeException("Email already exists");
     }
 
-    // redirect_uri 검증 (clientId가 제공된 경우)
-    if (request.getClientId() != null 
-        && !request.getClientId().isBlank() 
-        && request.getRedirectUri() != null 
+    // Validate redirect_uri (if clientId is provided)
+    if (request.getClientId() != null
+        && !request.getClientId().isBlank()
+        && request.getRedirectUri() != null
         && !request.getRedirectUri().isBlank()) {
       validateRedirectUri(request.getRedirectUri(), request.getClientId());
     }
 
-    // 비밀번호 암호화
     String encodedPassword = userPasswordEncoder.encode(request.getPassword());
 
-    // User 엔티티 생성
     User user =
         User.builder()
             .email(request.getEmail())
